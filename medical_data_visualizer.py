@@ -3,58 +3,82 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 
-# 1
-df = None
+# 1. Import data
+df = pd.read_csv('medical_examination.csv')
 
-# 2
-df['overweight'] = None
+# 2. Add 'overweight' column
+df['overweight'] = (df['weight'] / ((df['height'] / 100) ** 2)).apply(lambda x: 1 if x > 25 else 0)
 
-# 3
+# 3. Normalize data by making 0 always good and 1 always bad
+df['cholesterol'] = df['cholesterol'].apply(lambda x: 0 if x == 1 else 1)
+df['gluc'] = df['gluc'].apply(lambda x: 0 if x == 1 else 1)
 
 
-# 4
+# 4. Draw Categorical Plot
 def draw_cat_plot():
-    # 5
-    df_cat = None
+    # 5. Create DataFrame for cat plot using `pd.melt`
+    df_cat = pd.melt(
+        df, 
+        id_vars=['cardio'], 
+        value_vars=['cholesterol', 'gluc', 'smoke', 'alco', 'active', 'overweight']
+    )
 
-
-    # 6
-    df_cat = None
+    # 6. Group and reformat the data to split it by 'cardio'
+    df_cat = df_cat.groupby(['cardio', 'variable', 'value']).size().reset_index(name='total')
     
+    # 7. Draw the catplot with 'sns.catplot()'
+    fig = sns.catplot(
+        x='variable', 
+        y='total', 
+        hue='value', 
+        col='cardio', 
+        data=df_cat, 
+        kind='bar'
+    ).fig
 
-    # 7
-
-
-
-    # 8
-    fig = None
-
-
-    # 9
+    # 8. Do not modify the next two lines
     fig.savefig('catplot.png')
     return fig
 
 
-# 10
+# 9. Draw Heat Map
 def draw_heat_map():
-    # 11
-    df_heat = None
+    # 10. Clean the data
+    # Filters out records where diastolic pressure is higher than systolic,
+    # and keeps height/weight values within the 2.5th to 97.5th percentiles.
+    df_heat = df[
+        (df['ap_lo'] <= df['ap_hi']) &
+        (df['height'] >= df['height'].quantile(0.025)) &
+        (df['height'] <= df['height'].quantile(0.975)) &
+        (df['weight'] >= df['weight'].quantile(0.025)) &
+        (df['weight'] <= df['weight'].quantile(0.975))
+    ]
 
-    # 12
-    corr = None
+    # 11. Calculate the correlation matrix
+    corr = df_heat.corr()
 
-    # 13
-    mask = None
+    # 12. Generate a mask for the upper triangle
+    mask = np.triu(np.ones_like(corr, dtype=bool))
 
+    # 13. Set up the matplotlib figure
+    fig, ax = plt.subplots(figsize=(12, 12))
 
+    # 14. Draw the heatmap with 'sns.heatmap()'
+    # Exact styling parameters are required by freeCodeCamp unit tests
+    sns.heatmap(
+        corr, 
+        mask=mask, 
+        annot=True, 
+        fmt='.1f', 
+        center=0, 
+        vmin=-0.1, 
+        vmax=0.32, 
+        square=True, 
+        linewidths=.5, 
+        cbar_kws={"shrink": .5}, 
+        ax=ax
+    )
 
-    # 14
-    fig, ax = None
-
-    # 15
-
-
-
-    # 16
+    # 15. Do not modify the next two lines
     fig.savefig('heatmap.png')
     return fig
